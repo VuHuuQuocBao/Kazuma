@@ -4,6 +4,12 @@ import fs from "fs";
 import https from "https";
 import { getDataForChapterCrawler } from "../src/supabase/supabaseService.js";
 import { supabaseClient } from "../src/supabase/supabaseClient.js";
+import axiosRetry from "axios-retry";
+import * as lo from "lodash";
+
+function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 const axiosBaseConfig = {
     baseURL: "https://blogtruyenmoi.com/",
 };
@@ -88,8 +94,9 @@ const Process = async (element, path) => {
         //     promises.push(promise);
         // }
         var promises = [];
+        var results = [];
         for (var j = 0; j < listChapterImagesURL.length; j++) {
-            let promise = new Promise((resolve, reject) => {
+            let result = await new Promise((resolve, reject) => {
                 const chapterClient = axios.create(axiosChapterConfig);
 
                 chapterClient
@@ -114,7 +121,33 @@ const Process = async (element, path) => {
                     });
             });
 
-            promises.push(promise);
+            results.push(result);
+            // let promise = new Promise((resolve, reject) => {
+            //     const chapterClient = axios.create(axiosChapterConfig);
+
+            //     chapterClient
+            //         .get(listChapterImagesURL[j], {
+            //             responseType: "stream",
+            //         })
+            //         .then((response) => {
+            //             let buffers = [];
+
+            //             response.data.on("data", (chunk) => {
+            //                 buffers.push(chunk);
+            //             });
+
+            //             response.data.on("end", () => {
+            //                 let buffer = Buffer.concat(buffers);
+            //                 resolve(buffer);
+            //             });
+
+            //             response.data.on("error", (err) => {
+            //                 reject(err);
+            //             });
+            //         });
+            // });
+
+            // promises.push(promise);
         }
 
         var result = [];
@@ -138,26 +171,64 @@ const Process = async (element, path) => {
         }
         var formData = new FormData();
 
-        for (var k = 0; k < buffers.length; k++) {
-            let blob = new Blob([buffers[k]], { type: "image/jpeg" });
-            formData.append("images", blob, `image${k}.jpg`);
+        // for (var k = 0; k < buffers.length; k++) {
+        //     let blob = new Blob([buffers[k]], { type: "image/jpeg" });
+        //     formData.append("images", blob, `image${k}.jpg`);
+        // }
+
+        axiosRetry(axios, {
+            retries: 3, // number of retries
+            retryDelay: (retryCount) => {
+                return retryCount * 1000; // time interval between retries
+            },
+            retryCondition: (error) => {
+                // if retry condition is not specified, by default idempotent requests are retried
+                return error.response.status === 500;
+            },
+        });
+
+        for (var k = 0; k < results.length; k++) {
+            var formData1 = new FormData();
+            let blob = new Blob([results[k]], { type: "image/jpeg" });
+            formData1.append("images", blob, `image${k}.jpg`);
+
+            axios
+                .post("http://localhost:5197/SaveChapterImages", formData1, {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                    httpsAgent: new https.Agent({
+                        rejectUnauthorized: false,
+                    }),
+                })
+                .then((response) => {
+                    console.log(response.data);
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+
+            await delay(5000);
         }
 
-        axios
-            .post("http://localhost:5197/SaveChapterImages", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-                httpsAgent: new https.Agent({
-                    rejectUnauthorized: false,
-                }),
-            })
-            .then((response) => {
-                console.log(response.data);
-            })
-            .catch((error) => {
-                console.error(error);
-            });
+        // for (var z = 0; z < formData.length; z++) {
+        //     axios
+        //         .post("http://localhost:5197/SaveChapterImages", formData[z], {
+        //             headers: {
+        //                 "Content-Type": "multipart/form-data",
+        //             },
+        //             httpsAgent: new https.Agent({
+        //                 rejectUnauthorized: false,
+        //             }),
+        //         })
+        //         .then((response) => {
+        //             console.log(response.data);
+        //         })
+        //         .catch((error) => {
+        //             console.error(error);
+        //         });
+        // }
+
         // await Promise.all(promises).then((buffers) => {
         //     let formData = new FormData();
 

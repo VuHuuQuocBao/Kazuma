@@ -2,14 +2,14 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Spaghetti.Common.Configuration;
+using Kazuma.Common.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Spaghetti.Common.Kafka
+namespace Kazuma.Common.Kafka
 {
     public class ConsumerWorker : BackgroundService
     {

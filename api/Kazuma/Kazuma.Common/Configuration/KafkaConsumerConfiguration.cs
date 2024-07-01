@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Spaghetti.Common.Configuration
+namespace Kazuma.Common.Configuration
 {
     public class KafkaConsumerConfiguration : ConsumerConfig
     {

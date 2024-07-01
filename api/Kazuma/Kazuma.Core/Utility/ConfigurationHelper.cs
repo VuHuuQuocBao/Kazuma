@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 
 
-namespace Spaghetti.Core.Utility
+namespace Kazuma.Core.Utility
 {
     public class ConfigurationHelper
     {

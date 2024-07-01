@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Spaghetti.Core.Utilities.Kafka
+namespace Kazuma.Core.Utilities.Kafka
 {
     public static class KafkaUtility
     {

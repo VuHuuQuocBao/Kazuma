@@ -1,11 +1,10 @@
 ﻿using Confluent.Kafka;
+using Kazuma.Common.Kafka;
+using Kazuma.Common.Models.Supabase;
+using Kazuma.IngestService.DTO;
 using Newtonsoft.Json;
-using Spaghetti.Common.Kafka;
-using Spaghetti.Common.Models.Supabase;
-using Spaghetti.Domain.Kafka.Models;
-using Spaghetti.IngestService.DTO;
 
-namespace Spaghetti.IngestService.Consumers
+namespace Kazuma.IngestService.Consumers
 {
     public class MangaGenericDataConsumer : TopicConsumer<Null, ICollection<MangaInfoGenericRequest>>
     {
@@ -25,7 +24,7 @@ namespace Spaghetti.IngestService.Consumers
                 DateTime now = DateTime.Now;
                 Console.WriteLine("Processing at: " + now);
                 foreach (var item in message)
-                    if(duplicate.Add(item.Id))
+                    if (duplicate.Add(item.Id))
                     {
                         mangaInfoGenerics.Add(new MangaInfoGeneric()
                         {

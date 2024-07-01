@@ -1,4 +1,4 @@
-﻿namespace Spaghetti.IngestService.DTO
+﻿namespace Kazuma.IngestService.DTO
 {
     public class MangaInfoDetailRequest
     {

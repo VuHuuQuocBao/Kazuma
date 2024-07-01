@@ -1,15 +1,11 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
+﻿using Kazuma.Core.Abstractions.CommonService.CacheService;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Spaghetti.Core.Abstractions.CommonService.CacheService;
 using StackExchange.Redis;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace Spaghetti.Core.Implementations.CommonService.CacheService
+namespace Kazuma.Core.Implementations.CommonService.CacheService
 {
     public class CacheService : ICacheService
     {
@@ -59,50 +55,50 @@ namespace Spaghetti.Core.Implementations.CommonService.CacheService
         public bool KeyExists(string key)
         =>
              GetDatabase().KeyExists(key, CommandFlags.None);
-        
+
 
         public async Task<bool> KeyExistsAsync(string key)
         =>
              await GetDatabase().KeyExistsAsync(key, CommandFlags.None);
-        
+
 
         public bool SetExpire(string key, TimeSpan? timespan)
         =>
              GetDatabase().KeyExpire(key, timespan, CommandFlags.None);
-        
+
 
         public async Task<bool> SetExpireAsync(string key, TimeSpan? timespan)
         =>
              await GetDatabase().KeyExpireAsync(key, timespan, CommandFlags.None);
-        
+
 
         public bool DeleteKey(string key)
         =>
              GetDatabase().KeyDelete(key, CommandFlags.None);
-        
+
 
         public async Task<bool> DeleteKeyAsync(string key)
         =>
              await GetDatabase().KeyDeleteAsync(key, CommandFlags.None);
-        
+
 
         public bool Lock(string key, string value, TimeSpan exprity = default)
         =>
              GetDatabase().LockTake(key, value, exprity, CommandFlags.None);
-        
+
 
         public async Task<bool> LockAsync(string key, string value, TimeSpan expiry = default)
         =>
              await GetDatabase().LockTakeAsync(key, value, expiry, CommandFlags.None);
-        
+
 
         public bool Unlock(string key, string value)
         =>
              GetDatabase().LockRelease(key, value, CommandFlags.None);
-        
+
 
         public async Task<bool> UnlockAsync(string key, string value)
-        => 
+        =>
             await GetDatabase().LockReleaseAsync(key, value, CommandFlags.None);
         #endregion
 
@@ -233,9 +229,9 @@ namespace Spaghetti.Core.Implementations.CommonService.CacheService
 
         #region Private method
         private IDatabase GetDatabase()
-        =>  
+        =>
             _connection.Value.GetDatabase();
-        
+
         #endregion
     }
 }

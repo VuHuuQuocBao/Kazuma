@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Spaghetti.Core.Abstractions.CommonService.CacheService;
-using Spaghetti.Core.Implementations.CommonService.CacheService;
+﻿using Kazuma.Core.Abstractions.CommonService.CacheService;
+using Kazuma.Core.Implementations.CommonService.CacheService;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Spaghetti.Core.DI.Extensions
+namespace Kazuma.Core.DI.Extensions
 {
     public static class ServiceCollectionExtensions
     {

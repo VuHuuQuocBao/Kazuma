@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Supabase.Postgrest.Attributes;
 using Supabase.Postgrest.Models;
 
-namespace Spaghetti.Common.Models.Supabase
+namespace Kazuma.Common.Models.Supabase
 {
     [Table("MangaInfoGeneric")]
     public class MangaInfoGeneric : BaseModel

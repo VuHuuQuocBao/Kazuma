@@ -1,14 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Kazuma.Common.Kafka;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Spaghetti.Common.Kafka;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Spaghetti.Core.ExtensionMethod.Kafka
+namespace Kazuma.Core.ExtensionMethod.Kafka
 {
     public static class ConsumerExtensionMethod
     {
@@ -42,7 +37,7 @@ namespace Spaghetti.Core.ExtensionMethod.Kafka
                     .SelectMany(o => o.DefinedTypes
                         .Where(x => x.IsClass)
                         .Where(x => @interface.IsAssignableFrom(x))
-                        //.Where(x => !x.CustomAttributes.Any(ca => ca.AttributeType == typeof(IgnoreServiceCollectionAttribute)))
+                    //.Where(x => !x.CustomAttributes.Any(ca => ca.AttributeType == typeof(IgnoreServiceCollectionAttribute)))
                     );
 
                 if (predicates?.Count() > 0)

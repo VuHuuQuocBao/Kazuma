@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Spaghetti.Core.Abstractions.CommonService.CacheService
+namespace Kazuma.Core.Abstractions.CommonService.CacheService
 {
     public interface ICacheService
     {

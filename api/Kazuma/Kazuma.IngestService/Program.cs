@@ -1,12 +1,12 @@
+using Kazuma.Common.Configuration;
+using Kazuma.Common.Kafka;
+using Kazuma.Common.Models.Supabase;
+using Kazuma.Core.ExtensionMethod.Kafka;
+using Kazuma.IngestService.DTO;
 using Microsoft.OpenApi.Models;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
-using Spaghetti.Common.Configuration;
-using Spaghetti.Common.Kafka;
-using Spaghetti.Common.Models.Supabase;
-using Spaghetti.Core.ExtensionMethod.Kafka;
-using Spaghetti.IngestService.DTO;
 using Supabase;
 
 
@@ -80,28 +80,37 @@ app.MapPost("/MangaInfoDetail", async (ICollection<MangaInfoGeneric> request, Ka
 
 app.MapPost("/SaveChapterImages", async (HttpContext httpContext) =>
 {
-    var form = httpContext.Request.Form;
-    foreach (var formFile in form.Files)
+    try
     {
-        using var ms = new MemoryStream();
-        await formFile.CopyToAsync(ms);
-        byte[] byteArray = ms.ToArray();
-
-        using (var image = Image.Load(byteArray))
+        var form = httpContext.Request.Form;
+        foreach (var formFile in form.Files)
         {
-            var imageEncoder = new JpegEncoder
-            {
-                Quality = 75,  // Adjust the quality parameter to reduce the file size
-            };
+            using var ms = new MemoryStream();
+            await formFile.CopyToAsync(ms);
+            byte[] byteArray = ms.ToArray();
 
-            image.Mutate(x => x.Resize(new ResizeOptions
+            using (var image = Image.Load(byteArray))
             {
-                Size = new Size(image.Width / 2, image.Height / 2),  // Adjust the size parameters to reduce the file size
-                Mode = ResizeMode.Max,
-            }));
-            await image.SaveAsync($"image11{formFile.FileName}_.jpg", imageEncoder);
+                var imageEncoder = new JpegEncoder
+                {
+                    Quality = 75,  // Adjust the quality parameter to reduce the file size
+                };
+
+                image.Mutate(x => x.Resize(new ResizeOptions
+                {
+                    Size = new Size(image.Width / 2, image.Height / 2),  // Adjust the size parameters to reduce the file size
+                    Mode = ResizeMode.Max,
+                }));
+                await image.SaveAsync($"./output/image11{formFile.FileName}", imageEncoder);
+            }
         }
     }
+    catch (Exception ex)
+    {
+
+        throw;
+    }
+
     /* var form = httpContext.Request.Form;
      using (var archiveStream = new FileStream("images1.zip", FileMode.Create))
      {

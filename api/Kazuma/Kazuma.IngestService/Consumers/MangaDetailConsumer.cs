@@ -1,10 +1,10 @@
 ﻿using Confluent.Kafka;
 using Newtonsoft.Json;
-using Spaghetti.Common.Kafka;
-using Spaghetti.Common.Models.Supabase;
-using Spaghetti.IngestService.DTO;
+using Kazuma.Common.Kafka;
+using Kazuma.Common.Models.Supabase;
+using Kazuma.IngestService.DTO;
 
-namespace Spaghetti.IngestService.Consumers
+namespace Kazuma.IngestService.Consumers
 {
     public class MangaDetailConsumer : TopicConsumer<Null, ICollection<MangaInfoGeneric>>
     {

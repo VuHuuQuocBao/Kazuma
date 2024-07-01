@@ -1,9 +1,9 @@
 ﻿/*using Confluent.Kafka;
 using Newtonsoft.Json;
-using Spaghetti.Common.Kafka;
-using Spaghetti.Domain.Kafka.Models;
+using Kazuma.Common.Kafka;
+using Kazuma.Domain.Kafka.Models;
 
-namespace Spaghetti.IngestService.Consumers
+namespace Kazuma.IngestService.Consumers
 {
     public class NotificationConsumer : TopicConsumer<string, KafkaMessage>
     {

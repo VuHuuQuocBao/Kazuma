@@ -2,8 +2,8 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Spaghetti.Common.Configuration;
-using Spaghetti.Core.Utilities.Kafka;
+using Kazuma.Common.Configuration;
+using Kazuma.Core.Utilities.Kafka;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 using static Confluent.Kafka.ConfigPropertyNames;
 
 
-namespace Spaghetti.Common.Kafka
+namespace Kazuma.Common.Kafka
 {
     public sealed class KafkaProducer : IDisposable
     {
