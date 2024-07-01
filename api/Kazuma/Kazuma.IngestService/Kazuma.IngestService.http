@@ -1,0 +1,6 @@
+@Kazuma.IngestService_HostAddress = http://localhost:5210
+
+GET {{Kazuma.IngestService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
