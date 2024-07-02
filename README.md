@@ -1,4 +1,5 @@
-![Untitled-2024-06-30-2324](https://github.com/VuHuuQuocBao/Spaghetti/assets/96562872/812c036e-3a0a-4997-85eb-f66d3201311f)
+
+![Untitled-2024-06-30-2324](https://github.com/VuHuuQuocBao/Kazuma/assets/96562872/27b56c9c-653e-42df-92da-c9baf7c3bd05)
 
 
 - Todo:
