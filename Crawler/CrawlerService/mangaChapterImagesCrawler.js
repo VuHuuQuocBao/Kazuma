@@ -1,18 +1,18 @@
-import axios from "axios";
-import * as cheerio from "cheerio";
-import fs from "fs";
-import https from "https";
-import { getDataForChapterCrawler } from "../src/supabase/supabaseService.js";
-import { supabaseClient } from "../src/supabase/supabaseClient.js";
-import axiosRetry from "axios-retry";
-import * as lo from "lodash";
+import axios from "axios"
+import * as cheerio from "cheerio"
+import fs from "fs"
+import https from "https"
+import { getDataForChapterCrawler } from "../src/supabase/supabaseService.js"
+import { supabaseClient } from "../src/supabase/supabaseClient.js"
+import axiosRetry from "axios-retry"
+import * as lo from "lodash"
 
 function delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms))
 }
 const axiosBaseConfig = {
     baseURL: "https://blogtruyenmoi.com/",
-};
+}
 
 const axiosChapterConfig = {
     responseType: "stream",
@@ -32,96 +32,96 @@ const axiosChapterConfig = {
         "Sec-Fetch-Site": "cross-site",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0",
     },
-};
+}
 
-const client = axios.create(axiosBaseConfig);
+const client = axios.create(axiosBaseConfig)
 
 const GetData = async (path) => {
-    const { data } = await client.get(path);
-    return data;
-};
+    const { data } = await client.get(path)
+    return data
+}
 
-(async () => {
-    const processData = await getDataForChapterCrawler(supabaseClient, 100);
+export const mangaChapterImagesCrawler = async () => {
+    const processData = await getDataForChapterCrawler(supabaseClient, 100)
 
     for (const element of processData) {
-        const parts = element.id?.split("-");
-        const slugId = parts[parts.length - 1];
-        const slugName = element.title;
-        const path = `${slugId}/${slugName}`;
-        await Process(element, path);
+        const parts = element.id?.split("-")
+        const slugId = parts[parts.length - 1]
+        const slugName = element.title
+        const path = `${slugId}/${slugName}`
+        await Process(element, path)
     }
-})();
+}
 
 const Process = async (element, path) => {
-    const data = await GetData(path);
+    const data = await GetData(path)
 
-    const $ = cheerio.load(data);
+    const $ = cheerio.load(data)
 
-    const genresHtmnl = $(".description .category");
+    const genresHtmnl = $(".description .category")
 
-    const listChaptershtml = $(".list-wrap");
+    const listChaptershtml = $(".list-wrap")
     const listChapterHref = listChaptershtml
         .find("a")
         .map((i, el) => {
-            return $(el).attr("href");
+            return $(el).attr("href")
         })
-        .get();
+        .get()
 
-    const listChapterReverse = listChapterHref.reverse();
+    const listChapterReverse = listChapterHref.reverse()
     for (var i = 0; i < listChapterReverse.length; i++) {
-        var chapterHtml;
+        var chapterHtml
         try {
-            chapterHtml = await GetData(listChapterReverse[i]);
+            chapterHtml = await GetData(listChapterReverse[i])
         } catch (error) {
-            continue;
+            continue
         }
 
-        const $ = cheerio.load(chapterHtml);
+        const $ = cheerio.load(chapterHtml)
 
-        const listChapterImagesURLTemp = $("#content");
+        const listChapterImagesURLTemp = $("#content")
 
         const listChapterImagesURL = $("#content")
             .find("img")
             .map((i, el) => {
-                return $(el).attr("src");
+                return $(el).attr("src")
             })
-            .get();
+            .get()
 
         // for (var j = 0; j < listChapterImagesURL.length; j++) {
         //     const chapterClient = axios.create(axiosChapterConfig);
         //     var promise = chapterClient.get(listChapterImagesURL[j], axiosChapterConfig);
         //     promises.push(promise);
         // }
-        var promises = [];
-        var results = [];
+        var promises = []
+        var results = []
         for (var j = 0; j < listChapterImagesURL.length; j++) {
             let result = await new Promise((resolve, reject) => {
-                const chapterClient = axios.create(axiosChapterConfig);
+                const chapterClient = axios.create(axiosChapterConfig)
 
                 chapterClient
                     .get(listChapterImagesURL[j], {
                         responseType: "stream",
                     })
                     .then((response) => {
-                        let buffers = [];
+                        let buffers = []
 
                         response.data.on("data", (chunk) => {
-                            buffers.push(chunk);
-                        });
+                            buffers.push(chunk)
+                        })
 
                         response.data.on("end", () => {
-                            let buffer = Buffer.concat(buffers);
-                            resolve(buffer);
-                        });
+                            let buffer = Buffer.concat(buffers)
+                            resolve(buffer)
+                        })
 
                         response.data.on("error", (err) => {
-                            reject(err);
-                        });
-                    });
-            });
+                            reject(err)
+                        })
+                    })
+            })
 
-            results.push(result);
+            results.push(result)
             // let promise = new Promise((resolve, reject) => {
             //     const chapterClient = axios.create(axiosChapterConfig);
 
@@ -150,7 +150,7 @@ const Process = async (element, path) => {
             // promises.push(promise);
         }
 
-        var result = [];
+        var result = []
 
         //const values = await Promise.all(promises);
 
@@ -162,14 +162,14 @@ const Process = async (element, path) => {
         //     const a = 1;
         //     result.push(values);
         // });
-        var buffers;
+        var buffers
         try {
-            buffers = await Promise.all(promises);
+            buffers = await Promise.all(promises)
         } catch (error) {
-            console.error(error);
-            continue;
+            console.error(error)
+            continue
         }
-        var formData = new FormData();
+        var formData = new FormData()
 
         // for (var k = 0; k < buffers.length; k++) {
         //     let blob = new Blob([buffers[k]], { type: "image/jpeg" });
@@ -179,18 +179,18 @@ const Process = async (element, path) => {
         axiosRetry(axios, {
             retries: 3, // number of retries
             retryDelay: (retryCount) => {
-                return retryCount * 1000; // time interval between retries
+                return retryCount * 1000 // time interval between retries
             },
             retryCondition: (error) => {
                 // if retry condition is not specified, by default idempotent requests are retried
-                return error.response.status === 500;
+                return error.response.status === 500
             },
-        });
+        })
 
         for (var k = 0; k < results.length; k++) {
-            var formData1 = new FormData();
-            let blob = new Blob([results[k]], { type: "image/jpeg" });
-            formData1.append("images", blob, `image${k}.jpg`);
+            var formData1 = new FormData()
+            let blob = new Blob([results[k]], { type: "image/jpeg" })
+            formData1.append("images", blob, `image${k}.jpg`)
 
             axios
                 .post("http://localhost:5197/SaveChapterImages", formData1, {
@@ -202,13 +202,13 @@ const Process = async (element, path) => {
                     }),
                 })
                 .then((response) => {
-                    console.log(response.data);
+                    console.log(response.data)
                 })
                 .catch((error) => {
-                    console.error(error);
-                });
+                    console.error(error)
+                })
 
-            await delay(5000);
+            await delay(5000)
         }
 
         // for (var z = 0; z < formData.length; z++) {
@@ -279,10 +279,10 @@ const Process = async (element, path) => {
         //         console.error(error);
         //     });
 
-        const a = 1;
+        const a = 1
         //const listChaptersIdString = listChaptersId.reverse().join("|");
     }
-};
+}
 
 // axios(config)
 //     .then(function (response) {

@@ -10,7 +10,9 @@
         "axios-retry": "^4.4.1",
         "cheerio": "^1.0.0-rc.12",
         "dotenv": "^16.4.5",
+        "kafka-node": "^5.0.0",
         "lodash": "^4.17.21",
-        "logstash": "^5.0.2"
+        "logstash": "^5.0.2",
+        "node-cron": "^3.0.3"
     }
 }
