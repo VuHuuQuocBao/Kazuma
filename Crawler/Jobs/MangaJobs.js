@@ -13,8 +13,7 @@ export const mangaGenericCrawlerJob = cron.schedule(
 )
 
 export const mangaDetailsCrawlerJob = cron.schedule(
-    // "1 0 * * *",
-    "*/5 * * * * *",
+    "1 0 * * *",
     () => {
         console.log("Starting mangaDetailsCrawlerJob")
         // mangaDetailsCrawler()
@@ -23,10 +22,12 @@ export const mangaDetailsCrawlerJob = cron.schedule(
 )
 
 export const mangaChapterImagesCrawlerJob = cron.schedule(
-    "*/5 * * * * *",
+    "1 0 * * *",
     () => {
         console.log("Starting mangaChapterImagesCrawlerJob")
-        // mangaChapterImagesCrawler()
+        mangaChapterImagesCrawler()
     },
     { scheduled: false }
 )
+
+mangaChapterImagesCrawlerJob.start()

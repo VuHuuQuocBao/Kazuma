@@ -1,5 +1,5 @@
-import { mangaDetailsCrawlerJob, mangaGenericCrawlerJob, mangaChapterImagesCrawlerJob } from "./Jobs/metadataJob.js"
+import { mangaDetailsCrawlerJob, mangaGenericCrawlerJob, mangaChapterImagesCrawlerJob } from "./Jobs/MangaJobs.js"
 
-mangaGenericCrawlerJob.start()
-mangaDetailsCrawlerJob.start()
-mangaChapterImagesCrawlerJob.start()
+// mangaGenericCrawlerJob.start()
+// mangaDetailsCrawlerJob.start()
+// mangaChapterImagesCrawlerJob.start()

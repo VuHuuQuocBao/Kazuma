@@ -6,6 +6,47 @@ import { getDataForChapterCrawler } from "../src/supabase/supabaseService.js"
 import { supabaseClient } from "../src/supabase/supabaseClient.js"
 import axiosRetry from "axios-retry"
 import * as lo from "lodash"
+//import { producer, onReady, onError } from "../Kafka/KafkaProducer.js"
+import { KafkaClient, Producer } from "kafka-node"
+
+const clientKafka = new KafkaClient({ kafkaHost: "localhost:9092" })
+
+// Create a producer instance
+const producer = new Producer(clientKafka)
+
+producer.on("ready", function () {
+    console.log("Producer is ready")
+
+    mangaChapterImagesCrawler().then(async (results) => {
+        for (var x = 0; x < results.length; x++) {
+            for (var i = 0; i < results[x].data.length; i++) {
+                const message = {
+                    mangaName: results[x].title.replace(/\?/g, ""),
+                    imageByte: results[x].data[i].buffer.toString("base64"),
+                    fileName: results[x].data[i].fileName,
+                }
+                const payloads = [{ topic: "Chapter-Images", messages: JSON.stringify(message) }]
+
+                const sendPromise = new Promise((resolve, reject) => {
+                    producer.send(payloads, function (err, data) {
+                        if (err) {
+                            console.error("Error:", err)
+                            reject(err)
+                        } else {
+                            console.log(data)
+                            resolve(data)
+                        }
+                    })
+                })
+                await sendPromise
+            }
+        }
+    })
+})
+
+producer.on("error", function (err) {
+    console.log(err)
+})
 
 function delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms))
@@ -42,249 +83,95 @@ const GetData = async (path) => {
 }
 
 export const mangaChapterImagesCrawler = async () => {
-    const processData = await getDataForChapterCrawler(supabaseClient, 100)
+    const processData = await getDataForChapterCrawler(supabaseClient, 2)
+
+    const finalResult = []
 
     for (const element of processData) {
         const parts = element.id?.split("-")
         const slugId = parts[parts.length - 1]
         const slugName = element.title
         const path = `${slugId}/${slugName}`
-        await Process(element, path)
+        var tempResult = await Process(element, path)
+        finalResult.push({
+            title: element.title,
+            data: tempResult,
+        })
     }
+    return finalResult
 }
 
 const Process = async (element, path) => {
-    const data = await GetData(path)
+    try {
+        const data = await GetData(path)
 
-    const $ = cheerio.load(data)
+        const $ = cheerio.load(data)
 
-    const genresHtmnl = $(".description .category")
-
-    const listChaptershtml = $(".list-wrap")
-    const listChapterHref = listChaptershtml
-        .find("a")
-        .map((i, el) => {
-            return $(el).attr("href")
-        })
-        .get()
-
-    const listChapterReverse = listChapterHref.reverse()
-    for (var i = 0; i < listChapterReverse.length; i++) {
-        var chapterHtml
-        try {
-            chapterHtml = await GetData(listChapterReverse[i])
-        } catch (error) {
-            continue
-        }
-
-        const $ = cheerio.load(chapterHtml)
-
-        const listChapterImagesURLTemp = $("#content")
-
-        const listChapterImagesURL = $("#content")
-            .find("img")
+        const listChaptershtml = $(".list-wrap")
+        const listChapterHref = listChaptershtml
+            .find("a")
             .map((i, el) => {
-                return $(el).attr("src")
+                return $(el).attr("href")
             })
             .get()
 
-        // for (var j = 0; j < listChapterImagesURL.length; j++) {
-        //     const chapterClient = axios.create(axiosChapterConfig);
-        //     var promise = chapterClient.get(listChapterImagesURL[j], axiosChapterConfig);
-        //     promises.push(promise);
-        // }
-        var promises = []
-        var results = []
-        for (var j = 0; j < listChapterImagesURL.length; j++) {
-            let result = await new Promise((resolve, reject) => {
-                const chapterClient = axios.create(axiosChapterConfig)
+        const listChapterReverse = listChapterHref.reverse()
+        for (var i = 0; i < 2; i++) {
+            //for (var i = 0; i < listChapterReverse.length; i++) {
+            var chapterHtml
+            try {
+                chapterHtml = await GetData(listChapterReverse[i])
+            } catch (error) {
+                continue
+            }
 
-                chapterClient
-                    .get(listChapterImagesURL[j], {
-                        responseType: "stream",
-                    })
-                    .then((response) => {
-                        let buffers = []
+            const $ = cheerio.load(chapterHtml)
 
-                        response.data.on("data", (chunk) => {
-                            buffers.push(chunk)
-                        })
-
-                        response.data.on("end", () => {
-                            let buffer = Buffer.concat(buffers)
-                            resolve(buffer)
-                        })
-
-                        response.data.on("error", (err) => {
-                            reject(err)
-                        })
-                    })
-            })
-
-            results.push(result)
-            // let promise = new Promise((resolve, reject) => {
-            //     const chapterClient = axios.create(axiosChapterConfig);
-
-            //     chapterClient
-            //         .get(listChapterImagesURL[j], {
-            //             responseType: "stream",
-            //         })
-            //         .then((response) => {
-            //             let buffers = [];
-
-            //             response.data.on("data", (chunk) => {
-            //                 buffers.push(chunk);
-            //             });
-
-            //             response.data.on("end", () => {
-            //                 let buffer = Buffer.concat(buffers);
-            //                 resolve(buffer);
-            //             });
-
-            //             response.data.on("error", (err) => {
-            //                 reject(err);
-            //             });
-            //         });
-            // });
-
-            // promises.push(promise);
-        }
-
-        var result = []
-
-        //const values = await Promise.all(promises);
-
-        // for (var k = 0; k < values.length; k++) {
-        //     result.push(values[k].data._readableState.buffer);
-        // }
-
-        // Promise.all(promises).then((values) => {
-        //     const a = 1;
-        //     result.push(values);
-        // });
-        var buffers
-        try {
-            buffers = await Promise.all(promises)
-        } catch (error) {
-            console.error(error)
-            continue
-        }
-        var formData = new FormData()
-
-        // for (var k = 0; k < buffers.length; k++) {
-        //     let blob = new Blob([buffers[k]], { type: "image/jpeg" });
-        //     formData.append("images", blob, `image${k}.jpg`);
-        // }
-
-        axiosRetry(axios, {
-            retries: 3, // number of retries
-            retryDelay: (retryCount) => {
-                return retryCount * 1000 // time interval between retries
-            },
-            retryCondition: (error) => {
-                // if retry condition is not specified, by default idempotent requests are retried
-                return error.response.status === 500
-            },
-        })
-
-        for (var k = 0; k < results.length; k++) {
-            var formData1 = new FormData()
-            let blob = new Blob([results[k]], { type: "image/jpeg" })
-            formData1.append("images", blob, `image${k}.jpg`)
-
-            axios
-                .post("http://localhost:5197/SaveChapterImages", formData1, {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
-                    httpsAgent: new https.Agent({
-                        rejectUnauthorized: false,
-                    }),
+            const listChapterImagesURL = $("#content")
+                .find("img")
+                .map((i, el) => {
+                    return $(el).attr("src")
                 })
-                .then((response) => {
-                    console.log(response.data)
-                })
-                .catch((error) => {
-                    console.error(error)
+                .get()
+            var results = []
+            for (var j = 0; j < listChapterImagesURL.length; j++) {
+                let result = await new Promise((resolve, reject) => {
+                    const chapterClient = axios.create(axiosChapterConfig)
+
+                    chapterClient
+                        .get(listChapterImagesURL[j], {
+                            responseType: "stream",
+                        })
+                        .then((response) => {
+                            let buffers = []
+
+                            response.data.on("data", (chunk) => {
+                                buffers.push(chunk)
+                            })
+
+                            response.data.on("end", () => {
+                                let buffer = Buffer.concat(buffers)
+                                resolve(buffer)
+                            })
+
+                            response.data.on("error", (err) => {
+                                reject(err)
+                            })
+                        })
                 })
 
-            await delay(5000)
+                results.push({
+                    fileName: listChapterImagesURL[j].split("/").pop(),
+                    buffer: result,
+                })
+            }
+            return results
         }
-
-        // for (var z = 0; z < formData.length; z++) {
-        //     axios
-        //         .post("http://localhost:5197/SaveChapterImages", formData[z], {
-        //             headers: {
-        //                 "Content-Type": "multipart/form-data",
-        //             },
-        //             httpsAgent: new https.Agent({
-        //                 rejectUnauthorized: false,
-        //             }),
-        //         })
-        //         .then((response) => {
-        //             console.log(response.data);
-        //         })
-        //         .catch((error) => {
-        //             console.error(error);
-        //         });
-        // }
-
-        // await Promise.all(promises).then((buffers) => {
-        //     let formData = new FormData();
-
-        //     for (var k = 0; k < buffers.length; k++) {
-        //         let blob = new Blob([buffers[k]], { type: "image/jpeg" });
-        //         formData.append("images", blob, `image${k}.jpg`);
-        //     }
-
-        //     // Send the FormData to the backend
-        //     axios
-        //         .post("http://localhost:5197/SaveChapterImages", formData, {
-        //             headers: {
-        //                 "Content-Type": "multipart/form-data",
-        //             },
-        //             httpsAgent: new https.Agent({
-        //                 rejectUnauthorized: false,
-        //             }),
-        //         })
-        //         .then((response) => {
-        //             console.log(response.data);
-        //         })
-        //         .catch((error) => {
-        //             console.error(error);
-        //         });
-        // });
-        // let formData = new FormData();
-        // for (var k = 0; k < result.length; k++) {
-        //     // Convert the buffer to a Blob
-        //     let blob = new Blob([new Uint8Array(result[k])], { type: "image/jpeg" });
-
-        //     // Append the Blob to the FormData
-        //     formData.append("images", blob, `image${k}.jpg`);
-        // }
-
-        // axios
-        //     .post("http://localhost:5197/SaveChapterImages", formData, {
-        //         headers: {
-        //             "Content-Type": "multipart/form-data",
-        //         },
-        //         httpsAgent: new https.Agent({
-        //             rejectUnauthorized: false,
-        //         }),
-        //     })
-        //     .then((response) => {
-        //         console.log(response.data);
-        //     })
-        //     .catch((error) => {
-        //         console.error(error);
-        //     });
-
-        const a = 1
-        //const listChaptersIdString = listChaptersId.reverse().join("|");
+    } catch (error) {
+        // compensate for any failure, upsert change lock to false
     }
 }
 
-// axios(config)
 //     .then(function (response) {
 //         response.data.pipe(fs.createWriteStream("./image2.png"));
 //     })

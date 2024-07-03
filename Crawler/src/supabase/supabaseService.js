@@ -1,7 +1,3 @@
-import { createClient } from "@supabase/supabase-js"
-import { config } from "dotenv"
-import { supabaseClient } from "./supabaseClient.js"
-
 export async function getOldestRecords(supabaseClient, limit) {
     let { data, error } = await supabaseClient.from("MangaInfoGeneric").select("*").eq("processed", "true").order("updatedAt", { ascending: true }).limit(limit)
 

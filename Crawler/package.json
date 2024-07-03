@@ -4,6 +4,9 @@
     "main": "index.js",
     "license": "MIT",
     "type": "module",
+    "scripts": {
+        "start": "node ./src/supabase/test1.js && node ./src/supabase/test2.js && node ./src/supabase/test3.js "
+    },
     "dependencies": {
         "@supabase/supabase-js": "^2.44.2",
         "axios": "^1.7.2",
