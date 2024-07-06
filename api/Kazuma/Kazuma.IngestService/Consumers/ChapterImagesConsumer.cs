@@ -15,15 +15,17 @@ namespace Kazuma.IngestService.Consumers
         {
             Console.WriteLine("Consuming");
             var message = consumeResult.Message.Value;
+            string directoryPath = "C:\\Users\\PC\\OneDrive\\Desktop\\Project\\Yolov5\\input\\" + message.MangaName;
+            string directoryChapterFolder = directoryPath + "\\" + message.ChapterFolderName;
+            if (!Directory.Exists(directoryPath))
+                Directory.CreateDirectory(directoryPath);
+            if (!Directory.Exists(directoryChapterFolder))
+                Directory.CreateDirectory(directoryChapterFolder);
             if (message.FileName.Contains("?"))
-            {
                 message.FileName = message.FileName.Replace("?", "");
-            }
             using (Image image = Image.Load(message.ImageByte))
             {
-                string directoryPath = "C:\\Users\\PC\\OneDrive\\Desktop\\Project\\Kazuma\\Yolov5\\input\\" + message.MangaName;
-                Directory.CreateDirectory(directoryPath);
-                string imagePath = Path.Combine(directoryPath, $"{message.FileName}.jpg");
+                string imagePath = Path.Combine(directoryChapterFolder, $"{message.FileName}.jpg");
                 image.Save(imagePath, new JpegEncoder());
             }
             return Task.CompletedTask;
@@ -37,6 +39,8 @@ namespace Kazuma.IngestService.Consumers
         public byte[] ImageByte { get; set; }
 
         public string FileName { get; set; }
+
+        public string ChapterFolderName { get; set; }
     }
 
 }

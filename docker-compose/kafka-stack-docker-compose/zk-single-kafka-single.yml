@@ -38,6 +38,6 @@ services:
             KAFKA_NUM_PARTITIONS: 3
             KAFKA_LOG_RETENTION_MS: 3600000
             KAFKA_LOG_RETENTION_BYTES: -1 # Disable retention by size
-            KAFKA_MESSAGE_MAX_BYTES: 2000000
+            KAFKA_MESSAGE_MAX_BYTES: 30000000
         depends_on:
             - zoo1

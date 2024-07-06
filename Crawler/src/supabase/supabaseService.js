@@ -24,3 +24,49 @@ export async function getDataForChapterCrawler(supabaseClient, limit) {
     }
     return result
 }
+
+export async function CheckOldestRecordsLocking(supabaseClient, limit) {
+    let { data, error } = await supabaseClient.from("MangaInfoGeneric").select("*").eq("Lock", "false").not("current_chapter", "is", "null").order("current_chapter", { ascending: true }).limit(limit)
+
+    if (error) {
+        console.error(error)
+        return []
+    }
+    return data
+}
+
+export async function getOldestRecordsLocking(supabaseClient, limit) {
+    let { data, error } = await supabaseClient.from("MangaInfoGeneric").select("*").eq("Lock", "false").not("current_chapter", "is", "null").order("updatedAt", { ascending: false }).limit(limit)
+
+    if (error) {
+        console.error(error)
+        return []
+    }
+    const threshold = 20
+    var listIds = []
+
+    data.forEach((item) => {
+        item.Lock = "true"
+        listIds.push(item.id)
+    })
+
+    const { status: upserStatus, error: upsertError } = await supabaseClient.from("MangaInfoGeneric").upsert(data)
+    if (upsertError) {
+        console.error("Error upserting records:", upsertError)
+        return []
+    }
+
+    if (upserStatus == "200") {
+    } else {
+        console.log("Trigger Activated")
+        return []
+    }
+
+    for (const item of data) {
+        if (item.current_chapter > threshold) {
+            return [] // Immediately return [] if the condition is met
+        }
+    }
+
+    return data
+}

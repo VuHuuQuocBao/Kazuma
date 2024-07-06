@@ -2,7 +2,7 @@ import axios from "axios"
 import * as cheerio from "cheerio"
 import fs from "fs"
 import https from "https"
-import { getDataForChapterCrawler } from "../src/supabase/supabaseService.js"
+import { getDataForChapterCrawler, getOldestRecordsLocking, CheckOldestRecordsLocking } from "../src/supabase/supabaseService.js"
 import { supabaseClient } from "../src/supabase/supabaseClient.js"
 import axiosRetry from "axios-retry"
 import * as lo from "lodash"
@@ -14,34 +14,56 @@ const clientKafka = new KafkaClient({ kafkaHost: "localhost:9092" })
 // Create a producer instance
 const producer = new Producer(clientKafka)
 
-producer.on("ready", function () {
+producer.on("ready", async function () {
     console.log("Producer is ready")
 
-    mangaChapterImagesCrawler().then(async (results) => {
-        for (var x = 0; x < results.length; x++) {
-            for (var i = 0; i < results[x].data.length; i++) {
-                const message = {
-                    mangaName: results[x].title.replace(/\?/g, ""),
-                    imageByte: results[x].data[i].buffer.toString("base64"),
-                    fileName: results[x].data[i].fileName,
-                }
-                const payloads = [{ topic: "Chapter-Images", messages: JSON.stringify(message) }]
+    let totalRecords = await CheckOldestRecordsLocking(supabaseClient, 10)
 
-                const sendPromise = new Promise((resolve, reject) => {
-                    producer.send(payloads, function (err, data) {
-                        if (err) {
-                            console.error("Error:", err)
-                            reject(err)
-                        } else {
-                            console.log(data)
-                            resolve(data)
+    while (totalRecords.length > 0) {
+        // Create an array of 10 promises
+        const promises = Array(totalRecords.length)
+            .fill()
+            .map(() => mangaChapterImagesCrawler())
+
+        // Execute all promises in parallel
+        await Promise.all(promises)
+            .then(async (allResults) => {
+                for (const results of allResults) {
+                    for (var x = 0; x < results.length; x++) {
+                        for (var i = 0; i < results[x].data.length; i++) {
+                            const message = {
+                                mangaName: results[x].title.replace(/\?/g, ""),
+                                imageByte: results[x].data[i].buffer.toString("base64"),
+                                fileName: results[x].data[i].fileName,
+                                chapterFolderName: results[x].data[i].chapterFolderName,
+                            }
+                            const payloads = [{ topic: "Chapter-Images", messages: JSON.stringify(message) }]
+
+                            const sendPromise = new Promise((resolve, reject) => {
+                                producer.send(payloads, function (err, data) {
+                                    if (err) {
+                                        console.error("Error:", err)
+                                        console.log(results[x].data[i])
+                                        reject(err)
+                                    } else {
+                                        console.log(data)
+                                        resolve(data)
+                                    }
+                                })
+                            })
+                            await sendPromise
                         }
-                    })
-                })
-                await sendPromise
-            }
-        }
-    })
+                    }
+                }
+            })
+            .catch((error) => {
+                console.error("Error executing promises:", error)
+            })
+
+        totalRecords = await CheckOldestRecordsLocking(supabaseClient, 10)
+    }
+
+    producer.close()
 })
 
 producer.on("error", function (err) {
@@ -83,9 +105,21 @@ const GetData = async (path) => {
 }
 
 export const mangaChapterImagesCrawler = async () => {
-    const processData = await getDataForChapterCrawler(supabaseClient, 2)
+    //const processData = await getDataForChapterCrawler(supabaseClient, 2)
 
+    console.log("Job Processing")
+
+    var processData = await getOldestRecordsLocking(supabaseClient, 1)
+    while (processData.length == 0) {
+        console.log("Re-running due lock Trigger or exceed threshold")
+        await delay(getRandomNumber(2000, 5000))
+        processData = await getOldestRecordsLocking(supabaseClient, 1)
+    }
     const finalResult = []
+
+    console.log("Pass Locking")
+
+    console.log(processData)
 
     for (const element of processData) {
         const parts = element.id?.split("-")
@@ -114,9 +148,9 @@ const Process = async (element, path) => {
                 return $(el).attr("href")
             })
             .get()
-
+        var results = []
         const listChapterReverse = listChapterHref.reverse()
-        for (var i = 0; i < 2; i++) {
+        for (var i = 0; i < listChapterReverse.length; i++) {
             //for (var i = 0; i < listChapterReverse.length; i++) {
             var chapterHtml
             try {
@@ -124,6 +158,8 @@ const Process = async (element, path) => {
             } catch (error) {
                 continue
             }
+
+            const chapterFolderName = listChapterReverse[i].split("/")[1].slice(1)
 
             const $ = cheerio.load(chapterHtml)
 
@@ -133,7 +169,6 @@ const Process = async (element, path) => {
                     return $(el).attr("src")
                 })
                 .get()
-            var results = []
             for (var j = 0; j < listChapterImagesURL.length; j++) {
                 let result = await new Promise((resolve, reject) => {
                     const chapterClient = axios.create(axiosChapterConfig)
@@ -163,39 +198,16 @@ const Process = async (element, path) => {
                 results.push({
                     fileName: listChapterImagesURL[j].split("/").pop(),
                     buffer: result,
+                    chapterFolderName: chapterFolderName,
                 })
             }
-            return results
         }
+        return results
     } catch (error) {
-        // compensate for any failure, upsert change lock to false
+        console.log(error)
     }
 }
 
-//     .then(function (response) {
-//         response.data.pipe(fs.createWriteStream("./image2.png"));
-//     })
-//     .catch((error) => {
-//         console.error(error);
-//     });
-
-// fs.writeFile("./CrawlData/GenericData/data.json", json, "utf8", function (err) {
-//     if (err) throw err;
-//     console.log("complete");
-
-//     axios
-//         .post("http://localhost:5197/MangaInfoGeneric", arr, {
-//             headers: {
-//                 "Content-Type": "application/json",
-//             },
-//             httpsAgent: new https.Agent({
-//                 rejectUnauthorized: false,
-//             }),
-//         })
-//         .then((response) => {
-//             console.log(response.data);
-//         })
-//         .catch((error) => {
-//             console.error(error);
-//         });
-// });
+function getRandomNumber(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min
+}
